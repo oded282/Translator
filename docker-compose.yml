@@ -1,0 +1,63 @@
+version: "3.3"
+
+services:
+
+  translate:
+    build: ./translate
+    container_name: translate
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - REDIS_HOST=redis
+      - DB_TRANSLATED=translated
+      - DB_HOSTNAME=redis
+      - DB_PORT=6379
+      - DB_PASSWORD=mypassword
+    volumes:
+      - appdata:/var/www
+    depends_on:
+      - redis
+    expose:
+      - 8080
+    networks:
+      - backend
+      - frontend
+
+  redis:
+    image: redis:6-alpine
+    container_name: redis
+    hostname: redis
+    restart: unless-stopped
+    command: --requirepass mypassword
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    
+
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - nginxdata:/var/log/nginx
+    depends_on:
+      - translate
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
+  appdata:
+    driver: local
+  nginxdata:
+    driver: local
